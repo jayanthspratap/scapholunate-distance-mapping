@@ -73,7 +73,7 @@
   #reset:hover { color: var(--fg); }
 
   /* bottom centre: method note ------------------------------------------- */
-  #note { left: 50%; transform: translateX(-50%); bottom: 24px; max-width: 460px;
+  #note { left: 50%; transform: translateX(-50%); bottom: 24px; max-width: 520px;
           text-align: center; font-size: 11px; color: #63656b; pointer-events: none; }
 
   /* 3D-anchored labels ---------------------------------------------------- */
@@ -124,8 +124,9 @@
   <button id="reset">reset view</button>
 </div>
 
-<p class="ui" id="note">The solid is the joint interval itself: one block per coronal
-row, spanning scaphoid to lunate, coloured by its own width.</p>
+<p class="ui" id="note">Each block is one measured row &mdash; the radial&ndash;ulnar gap from
+scaphoid to lunate, coloured by its width. Only rows within 1&nbsp;mm of each slice's
+narrowest gap are retained.</p>
 
 <div id="loading">loading…</div>
 

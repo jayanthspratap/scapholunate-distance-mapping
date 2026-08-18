@@ -176,13 +176,17 @@ const cloud = new THREE.Points(cloudGeom, new THREE.PointsMaterial({
 cloud.visible = false;
 scene.add(cloud);
 
-// the +/-3 mm (y,z) square the manuscript samples, run out along the gap axis
+// The manuscript samples a +/-3 mm window in (y,z) at whatever x the joint sits
+// at, so this is a flat square on the mid-joint plane -- not a box. Extruding it
+// along the gap axis would imply a sampled volume that does not exist.
 const winGroup = new THREE.Group();
 {
-  const seg = [], c = [[-3,-3],[3,-3],[3,3],[-3,3]], x0 = -1, x1 = 9;
+  const mid = data.cohort.mid.flat();
+  const x = mid.reduce((a, b) => a + b, 0) / mid.length;
+  const seg = [], c = [[-3,-3],[3,-3],[3,3],[-3,3]];
   for (let i = 0; i < 4; i++) {
     const a = c[i], b = c[(i + 1) % 4];
-    seg.push([x0,a[0],a[1]],[x0,b[0],b[1]], [x1,a[0],a[1]],[x1,b[0],b[1]], [x0,a[0],a[1]],[x1,a[0],a[1]]);
+    seg.push([x,a[0],a[1]],[x,b[0],b[1]]);
   }
   const sp = new Float32Array(seg.length * 3);
   seg.forEach((t, i) => { sp[i*3] = t[0]; sp[i*3+1] = t[1]; sp[i*3+2] = t[2]; });
