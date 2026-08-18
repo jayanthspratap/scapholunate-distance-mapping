@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0c0e'/%3E%3Cpath d='M11 5v22' stroke='%23440154' stroke-width='4'/%3E%3Cpath d='M21 5v22' stroke='%2321918c' stroke-width='4'/%3E%3C/svg%3E">
+<title>Scapholunate distance — 3D maps</title>
+<meta name="description" content="Interactive 3D scapholunate distance maps from CT, 25 wrists with scapholunate interosseous ligament injury.">
+<style>
+  :root {
+    --bg: #0b0c0e;
+    --fg: #e8e6e3;
+    --dim: #8b8d92;
+    --line: #24262b;
+    --accent: #ffd166;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font: 400 13px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  canvas { display: block; touch-action: none; }
+  #stage { position: fixed; inset: 0; }
+
+  .ui { position: fixed; z-index: 2; }
+  .ui, .ui * { -webkit-user-select: none; user-select: none; }
+
+  /* top left ------------------------------------------------------------ */
+  #title { top: 22px; left: 24px; pointer-events: none; }
+  #title h1 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+  #title p  { margin: 3px 0 0; font-size: 12px; color: var(--dim); }
+
+  /* top right ------------------------------------------------------------ */
+  #controls { top: 20px; right: 24px; display: flex; gap: 8px; align-items: center; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+  .seg button {
+    appearance: none; border: 0; background: transparent; color: var(--dim);
+    font: inherit; font-size: 12px; padding: 6px 13px; cursor: pointer;
+  }
+  .seg button:hover { color: var(--fg); }
+  .seg button[aria-pressed="true"] { background: #1a1c20; color: var(--fg); }
+  select {
+    appearance: none; background: transparent; color: var(--fg);
+    border: 1px solid var(--line); border-radius: 7px;
+    font: inherit; font-size: 12px; padding: 6px 26px 6px 11px; cursor: pointer;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M1 1l4 4 4-4' fill='none' stroke='%238b8d92' stroke-width='1.4'/></svg>");
+    background-repeat: no-repeat; background-position: right 9px center;
+  }
+  select:disabled { opacity: .35; cursor: default; }
+  select option { background: #16181c; color: var(--fg); }
+
+  /* bottom left: colour scale -------------------------------------------- */
+  #scale { left: 24px; bottom: 22px; pointer-events: none; }
+  #ramp { width: 168px; height: 7px; border-radius: 4px; }
+  #scale .row { display: flex; justify-content: space-between; width: 168px; margin-top: 5px;
+                font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
+  #scale .cap { font-size: 11px; color: var(--dim); margin-bottom: 6px; }
+
+  /* bottom right: layers -------------------------------------------------- */
+  #layers { right: 24px; bottom: 22px; display: flex; flex-direction: column;
+            align-items: flex-end; gap: 6px; }
+  #layers label { display: flex; align-items: center; gap: 7px; font-size: 12px;
+                  color: var(--dim); cursor: pointer; }
+  #layers label:hover { color: var(--fg); }
+  #layers input { appearance: none; width: 12px; height: 12px; margin: 0;
+                  border: 1px solid #3a3d44; border-radius: 3px; cursor: pointer; }
+  #layers input:checked { background: var(--fg); border-color: var(--fg); }
+  #reset { appearance: none; background: transparent; border: 0; color: var(--dim);
+           font: inherit; font-size: 12px; padding: 0; cursor: pointer; margin-top: 3px; }
+  #reset:hover { color: var(--fg); }
+
+  /* bottom centre: method note ------------------------------------------- */
+  #note { left: 50%; transform: translateX(-50%); bottom: 24px; max-width: 460px;
+          text-align: center; font-size: 11px; color: #63656b; pointer-events: none; }
+
+  /* 3D-anchored labels ---------------------------------------------------- */
+  .tag { position: fixed; z-index: 3; pointer-events: none; white-space: nowrap;
+         font-size: 11px; transform: translate(-50%, -50%); opacity: 0; transition: opacity .18s; }
+  .tag b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tag.axis { color: var(--dim); font-size: 10.5px; letter-spacing: .04em; }
+  .tag.peak { color: var(--accent); }
+  .tag.match { color: #7fd7ff; }
+
+  #loading { position: fixed; inset: 0; display: grid; place-items: center;
+             color: var(--dim); font-size: 12px; z-index: 4; }
+
+  @media (max-width: 720px) {
+    #title { top: 16px; left: 16px; }
+    #controls { top: 14px; right: 16px; left: 16px; justify-content: flex-end; }
+    #scale, #layers { bottom: 16px; }
+    #scale { left: 16px; } #layers { right: 16px; }
+    #note { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+
+<div class="ui" id="title">
+  <h1>Scapholunate distance</h1>
+  <p id="subtitle">Automated 3D mapping from CT</p>
+</div>
+
+<div class="ui" id="controls">
+  <div class="seg" role="group">
+    <button id="mPatient" aria-pressed="true">Patient</button>
+    <button id="mCohort" aria-pressed="false">Cohort</button>
+  </div>
+  <select id="pick" aria-label="Patient"></select>
+</div>
+
+<div class="ui" id="scale">
+  <div class="cap">Interval distance</div>
+  <div id="ramp"></div>
+  <div class="row"><span id="lo"></span><span id="hi"></span></div>
+</div>
+
+<div class="ui" id="layers">
+  <label><input type="checkbox" id="lSurface"> mean field</label>
+  <label><input type="checkbox" id="lWindow"> ±3 mm window</label>
+  <button id="reset">reset view</button>
+</div>
+
+<p class="ui" id="note">The solid is the joint interval itself: one block per coronal
+row, spanning scaphoid to lunate, coloured by its own width.</p>
+
+<div id="loading">loading…</div>
+
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+figure*.png
+region_means_*.csv
+__pycache__/
+.DS_Store
+.ipynb_checkpoints/

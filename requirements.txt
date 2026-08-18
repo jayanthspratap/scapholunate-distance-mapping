@@ -1,0 +1,11 @@
+# Versions used for the published analysis (Python 3.9.19).
+# cv2 in that environment reports 4.10.0; 4.10.0.84 is the matching PyPI build.
+numpy==1.26.4
+pandas==2.2.2
+scipy==1.13.1
+matplotlib==3.8.4
+seaborn==0.13.2
+opencv-python==4.10.0.84
+nibabel==5.3.2
+pydicom==2.4.4
+tqdm==4.66.4
