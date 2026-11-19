@@ -56,7 +56,10 @@ function where(y, z) {
 }
 
 // ------------------------------------------------------------------ data ---
-const res = await fetch('./data.json').catch(() => null);
+// The page loads this file as app.js?v=<release>; the same stamp goes on every data file,
+// so a cached copy from an earlier release is never mixed with this one.
+const V = new URL(import.meta.url).search;
+const res = await fetch('./data.json' + V).catch(() => null);
 if (!res || !res.ok) {
   fail('Could not load the measurement data. Reload the page, or use the repository linked from the paper.');
   throw new Error('data.json unavailable');
@@ -724,12 +727,12 @@ requestAnimationFrame(loop);
 // ------------------------------------------------- progressive extras -----
 // Slice outlines and bone surfaces are the bulk of the payload, so they load
 // after the first frame rather than holding it up.
-fetch('./slices.json').then((r) => r.json()).then((j) => {
+fetch('./slices.json' + V).then((r) => r.json()).then((j) => {
   slices = j; sliceIdx = centralSlice(); apply(false);
 }).catch(() => { $('sliceSection').hidden = true; });
 
-fetch('./meshes.json').then((r) => r.json()).then(async (index) => {
-  const buf = await (await fetch('./meshes.bin')).arrayBuffer();
+fetch('./meshes.json' + V).then((r) => r.json()).then(async (index) => {
+  const buf = await (await fetch('./meshes.bin' + V)).arrayBuffer();
   data.patients.forEach((p, i) => {
     const rec = index.patients[p.id];
     if (!rec) return;
